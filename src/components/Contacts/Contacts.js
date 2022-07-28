@@ -9,7 +9,6 @@ const Contacts = ({ contacts, removeFn }) => {
       </button>
     </li>
   ));
-
   return <ul className={s.list}>{ell}</ul>;
 };
 export default Contacts;

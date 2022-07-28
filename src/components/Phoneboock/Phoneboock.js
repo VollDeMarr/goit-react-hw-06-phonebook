@@ -1,32 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
-
+import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import Contacts from '../Contacts/Contacts';
 import Form from '../Form/Form';
 import Filter from '../Filter/Filter';
-
+import { actions } from '../../redux/contacts-slice/contacts-slice';
 import s from './Phoneboock.module.css';
 function Phoneboock() {
-  const [contacts, setContacts] = useState([
-    { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-    { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-    { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-    { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-  ]);
+  const setFilter = state => state.contacts.filter;
+  const dispatch = useDispatch();
+  const contacts = useSelector(state => state.contacts.items);
+  const filter = useSelector(setFilter, shallowEqual);
 
-  const [filter, setFilter] = useState('');
-  const firstRef = useRef(true);
-
-  useEffect(() => {
-    if (firstRef.current) {
-      const getContacts = localStorage.getItem('contacts');
-      const contacts = JSON.parse(getContacts);
-
-      setContacts(contacts);
-      firstRef.current = false;
-    } else {
-      localStorage.setItem('contacts', JSON.stringify(contacts));
+  const getFilteredContacts = () => {
+    if (!filter) {
+      return contacts;
     }
-  }, [contacts]);
+    const filterText = filter.toLowerCase();
+        const filteredContacts = contacts.filter(({ name }) =>
+          name.toLowerCase().includes(filterText)
+        );
+    return filteredContacts;
+  };
+  const filteredContacts = getFilteredContacts();
 
   const formSubmit = data => {
     const findeName = contacts.find(item => item.name === data.name);
@@ -34,27 +28,18 @@ function Phoneboock() {
       alert(`${data.name} is already in contacts list`);
       return;
     }
-    setContacts(prev => {
-      console.log(prev);
-      return [...prev, data];
-    });
+    const action = actions.add(data);
+    dispatch(action);
   };
 
   const removeContact = id => {
-    setContacts(prevState => prevState.filter(contact => contact.id !== id));
+    const action = actions.remove(id);
+    dispatch(action);
   };
 
-  const filterList = e => {
-    setFilter(e.target.value);
+  const filterList = ({ target }) => {
+    dispatch(actions.filter(target.value));
   };
-
-  const getVisibleContacts = () => {
-    const inLowerCase = filter.toLowerCase();
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(inLowerCase)
-    );
-  };
-
   return (
     <div className={s.container}>
       <h1>Phoneboock</h1>
@@ -64,7 +49,7 @@ function Phoneboock() {
       <h2>Contacts</h2>
       <Filter value={filter} onChange={filterList} />
       <div className={s.contactsWrapper}>
-        <Contacts contacts={getVisibleContacts()} removeFn={removeContact} />
+        <Contacts contacts={filteredContacts} removeFn={removeContact} />
       </div>
     </div>
   );
